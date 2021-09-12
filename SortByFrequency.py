@@ -1,0 +1,112 @@
+import os, glob
+import sys
+import string
+from porter2stemmer import Porter2Stemmer
+
+bow_doc_col = {}
+
+
+class BowDocument:
+    def __init__(self, doc_ID, dict_):
+        self.documentID = doc_ID
+        self.dict = dict_
+        self.wordCount = 0
+
+    def getDocId(self):
+        return self.documentID
+
+    def getDict(self):
+        return self.dict
+
+    def getWordCount(self):
+        return self.wordCount
+
+    def addTerm(self, term):
+        # term = term.lower()
+        term = Porter2Stemmer().stem(term.lower()) #Q1b
+        if len(term) > 2 and term not in stopWordsList: #Q1b
+            try:
+                self.dict[term] += 1
+            except KeyError:
+                self.dict[term] = 1
+
+    def getTermFreqMap(self):
+        sortedList = sorted(self.dict.items(), key=lambda x: x[1]) #Q1c
+        for elem in sortedList:
+            print(elem[0], ":", elem[1])
+
+        # for item in self.dict.keys():
+        #     print(item, ":", self.dict.get(item, 0))
+
+
+def getAllDocId(): #returns all document ID. To use: print(getAllDocId())
+    allDocId = ""
+    for bdoc in bow_doc_col.items():
+        tempA = bdoc[0]
+        allDocId = allDocId + " " + bow_doc_col[tempA].getDocId()
+    return "This is all the document's ID: " + allDocId
+
+
+def displayDocInfo(aDocId): #displays terms by calling getTermFreqMap method
+    num_term = 0
+    for item in bow_doc_col[str(aDocId)].getDict():
+        num_term += len(item[1])
+    print("Doc", aDocId, "has", num_term, "different terms (stems) and have a total", bow_doc_col[str(aDocId)].getWordCount(), "words.")
+    bow_doc_col[str(aDocId)].getTermFreqMap()
+
+
+def parse_doc(inputpath, stop_wds):
+    Path = inputpath
+    filelist = os.listdir(Path)
+    start_end = False
+    for i in filelist:
+        if i.endswith(".xml"):
+            with open(Path + '/' + i, 'r') as f:
+                word_count = 0
+                myfile = f.readlines()
+                # print(f)
+                for line in myfile:
+                    line = line.strip()
+                    if line.startswith("<newsitem") | line.startswith("<p>"):
+                        if (start_end == False):
+                            if line.startswith("<newsitem "):
+                                for part in line.split():
+                                    if part.startswith("itemid="):
+                                        docid = part.split("=")[1].split("\"")[1]
+                                        bow_doc_col[docid] = BowDocument(docid, {})
+                                        break
+                                if line.startswith("<text>"):
+                                    start_end = True
+                            elif line.startswith("</text>"):
+                                break
+                            else:
+                                line = line.replace("<p>", "").replace("</p>", "").replace("quot", "")
+                                line = line.translate(str.maketrans('', '', string.digits)).translate(
+                                    str.maketrans(string.punctuation, ' ' * len(string.punctuation)))
+                                line = line.replace("\\s+", " ")
+                                for xterm in line.split():
+                                    word_count += 1
+                                    bow_doc_col[docid].addTerm(xterm)
+                                bow_doc_col[docid].wordCount = word_count
+                                start_end = False
+
+                f.close()
+    return (bow_doc_col)
+
+
+if __name__ == '__main__':
+
+    import sys
+
+    if len(sys.argv) != 2:
+        sys.stderr.write("USAGE: %s <coll-file>\n" % sys.argv[0])
+        sys.exit()
+
+    stopwords_f = open('common-english-words.txt', 'r')
+    stopWordsList = stopwords_f.read().split(',')
+    stopwords_f.close()
+
+    x = parse_doc(sys.argv[1], stopWordsList)
+    for num in x.keys():
+        displayDocInfo(num)
+    # displayDocInfo(741299)
