@@ -8,4 +8,4 @@ Stopping words are removed by comparing the term list to the stopping words list
 After stemming and removing stopping words from the term list, the data is displayed by ascending term frequency for each document.  
 
 <h2>tfidf.py</h2>
-tf idf value of every term is calulated and the top 20 term for each document is displayed.
+tf idf value of every term is calculated and the top 20 term for each document is displayed.
